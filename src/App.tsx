@@ -20,7 +20,7 @@ function App() {
         return <ParkingMap />;
     }
   };
-
+  // Palautus
   return (
     <div style={{ height: "100vh", width: "100vw", position: "relative" }}>
       <div
