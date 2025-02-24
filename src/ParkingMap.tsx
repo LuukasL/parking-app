@@ -15,8 +15,7 @@ interface ParkingSpot {
   price: string;
 }
 
-mapboxgl.accessToken =
-  "pk.eyJ1IjoibHV1a2FzbG9oaWxhaHRpIiwiYSI6ImNtM3g1MTM4bTEzMXMyaXM5eDFscHdmNXEifQ.k-gdj6rxz_bYnq4CEaS_Ww";
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || "";
 
 function createMarkerElement(color: string, shape: string) {
   const el = document.createElement("div");
