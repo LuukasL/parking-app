@@ -191,99 +191,58 @@ const ParkingMap = () => {
       el.style.cursor = "pointer";
 
       // Add marker and popup
-      new mapboxgl.Marker(el).setLngLat([center.lng, center.lat]).setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(
+      const popup = new mapboxgl.Popup({ offset: 25 })
+        .setHTML(
           `<h3>${spot.title}</h3>
           <p>${spot.description || "No description provided"}</p>
           <p>Price: ${spot.price} ${spot.currency}/hour</p>
           <div>
-            <button id="view-spot-${
+            <button class="popup-button" id="view-spot-${
               spot.id
-            }" style="background-color: #3b82f6; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">
-              ${role === "user" ? "Book Now" : "View Details"}
-            </button>
+            }" style="background-color: #3b82f6; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+            ${role === "user" ? "Book Now" : "View Details"}
+          </button>
             ${
               role === "owner"
-                ? `<button id="delete-spot-${spot.id}" style="background-color: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Delete</button>`
+                ? `<button class="popup-button" id="delete-spot-${spot.id}" style="background-color: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Delete</button>`
                 : ""
             }
        </div>`
         )
-      );
-      if (map.current) {
-        new mapboxgl.Marker(el)
-          .setLngLat([center.lng, center.lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>${spot.title}</h3>
-       <p>${spot.description || "No description provided"}</p>
-       <p>Price: ${spot.price} ${spot.currency}/hour</p>
-       <div style="display: flex; gap: 8px;">
-         <button id="view-spot-${
-           spot.id
-         }" style="background-color: #3b82f6; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">
-           ${role === "user" ? "Book Now" : "View Details"}
-         </button>
-         ${
-           role === "owner"
-             ? `<button id="delete-spot-${spot.id}" style="background-color: #ef4444; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Delete</button>`
-             : ""
-         }
-       </div>`
-            )
-          )
-          .addTo(map.current);
-        // Draw the parking spot rectangle
-        drawParkingSpotRectangle(spot);
-      }
-    });
-
-    // Add event listeners to the buttons in popups
-    setTimeout(() => {
-      parkingSpots.forEach((spot) => {
-        const viewButton = document.getElementById(`view-spot-${spot.id}`);
-        if (viewButton) {
-          viewButton.addEventListener("click", () => {
-            if (role === "user") {
-              // Open booking modal
-              setSelectedSpot(spot);
-              setIsBookingModalOpen(true);
-
-              // Set default booking time (now to 1 hour from now)
-              const now = new Date();
-              const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-
-              // Format as YYYY-MM-DDThh:mm
-              const formatDateTime = (date: Date) => {
-                return date.toISOString().slice(0, 16);
-              };
-
-              setBookingForm({
-                startTime: formatDateTime(now),
-                endTime: formatDateTime(oneHourLater),
-                vehicleRegistration: vehicles[0] || "",
-              });
-            } else {
-              // For owners - view details/edit
-              console.log("View details for spot:", spot);
-            }
-          });
-        }
-        if (role == "owner") {
+        .on("open", () => {
+          // Add event listeners to the buttons in popups
           const deleteButton = document.getElementById(
             `delete-spot-${spot.id}`
           );
-          console.log("Delete button found:", deleteButton);
-          if (deleteButton) {
-            deleteButton.addEventListener("click", () => {
-              console.log("Delete spot:", spot);
+          if (deleteButton && role === "owner") {
+            deleteButton.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setSpotToDelete(spot);
               setIsDeleteModalOpen(true);
             });
           }
-        }
-      });
-    }, 100);
+          const viewButton = document.getElementById(`view-spot-${spot.id}`);
+          if (viewButton) {
+            viewButton.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (role === "user") {
+                setSelectedSpot(spot);
+                setIsBookingModalOpen(true);
+                // Set default booking times
+              }
+            });
+          }
+        });
+      if (map.current) {
+        new mapboxgl.Marker(el)
+          .setLngLat([center.lng, center.lat])
+          .setPopup(popup)
+          .addTo(map.current);
+        drawParkingSpotRectangle(spot);
+      }
+    });
   };
 
   // Draw the parking spot rectangle on the map
@@ -458,11 +417,31 @@ const ParkingMap = () => {
 
   const deleteParkingSpot = (spotId: string) => {
     console.log("Deleting with spot ID:", spotId);
+
+    // Close any open popups
+    const popups = document.getElementsByClassName("mapboxgl-popup");
+    if (popups.length > 0) {
+      Array.from(popups).forEach((popup) => {
+        popup.remove();
+      });
+    }
+
+    if (map.current) {
+      const layerId = `spot-${spotId}`;
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId);
+      }
+      if (map.current.getSource(layerId)) {
+        map.current.removeSource(layerId);
+      }
+    }
+    // Remove from state
     setParkingSpots((prev) => prev.filter((spot) => spot.id !== spotId));
 
     // In a real app, call API to delete from backend
     parkingSpotDb.deleteParkingSpot(spotId);
 
+    // Close modal
     setIsDeleteModalOpen(false);
     setSpotToDelete(null);
   };
