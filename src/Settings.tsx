@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Bell,
   Shield,
@@ -6,17 +6,24 @@ import {
   HelpCircle,
   LogOut,
   ArrowRightLeft,
+  X,
 } from "lucide-react";
+import { useUser, UserRole } from "./UserContext";
 
 const Settings = () => {
+  const { role, setRole } = useUser();
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+
   const SettingItem = ({
     icon,
     text,
     description,
+    onClick,
   }: {
     icon: React.ReactNode;
     text: string;
     description?: string;
+    onClick?: () => void;
   }) => (
     <div
       style={{
@@ -26,6 +33,7 @@ const Settings = () => {
         borderBottom: "1px solid #e5e7eb",
         cursor: "pointer",
       }}
+      onClick={onClick}
     >
       <div
         style={{
@@ -51,6 +59,11 @@ const Settings = () => {
       </div>
     </div>
   );
+
+  const handleRoleChange = (newRole: UserRole) => {
+    setRole(newRole);
+    setIsRoleModalOpen(false);
+  };
 
   return (
     <div
@@ -105,7 +118,10 @@ const Settings = () => {
           <SettingItem
             icon={<ArrowRightLeft size={24} color="#6b7280" />}
             text="Change roles"
-            description="Change to/from another role"
+            description={`Current role: ${
+              role.charAt(0).toUpperCase() + role.slice(1)
+            }`}
+            onClick={() => setIsRoleModalOpen(true)}
           />
           <SettingItem
             icon={<LogOut size={24} color="#ef4444" />}
@@ -124,6 +140,128 @@ const Settings = () => {
           App Version 1.0.0
         </p>
       </div>
+
+      {/* Role Switch Modal */}
+      {isRoleModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "20px",
+              borderRadius: "12px",
+              width: "90%",
+              maxWidth: "400px",
+              position: "relative",
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setIsRoleModalOpen(false)}
+              style={{
+                position: "absolute",
+                right: "12px",
+                top: "12px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+              }}
+            >
+              <X size={20} color="#6b7280" />
+            </button>
+
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: "bold",
+                marginBottom: "20px",
+              }}
+            >
+              Switch Roles
+            </h3>
+
+            <p style={{ marginBottom: "20px" }}>
+              Select your role in the parking app:
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                marginBottom: "20px",
+              }}
+            >
+              <button
+                onClick={() => handleRoleChange("user")}
+                style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: role === "user" ? "#3b82f6" : "white",
+                  color: role === "user" ? "white" : "black",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                User (find and rent parking spots)
+              </button>
+
+              <button
+                onClick={() => handleRoleChange("owner")}
+                style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: role === "owner" ? "#3b82f6" : "white",
+                  color: role === "owner" ? "white" : "black",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                Owner (rent out your parking spots)
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "16px",
+              }}
+            >
+              <button
+                onClick={() => setIsRoleModalOpen(false)}
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
