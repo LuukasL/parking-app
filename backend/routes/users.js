@@ -3,11 +3,20 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const {
+  updateProfileValidation,
+  addVehicleValidation,
+} = require("../validators/user.validator");
+const { validationResult } = require("express-validator");
 
 // @route   PUT /api/users/profile
 // @desc    Update user profile
 // @access  Private
-router.put("/profile", auth, async (req, res) => {
+router.put("/profile", auth, updateProfileValidation, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   const { name, email, phone } = req.body;
 
   // Build updated user object
@@ -62,7 +71,11 @@ router.put("/change-role", auth, async (req, res) => {
 // @route   POST /api/users/vehicles
 // @desc    Add a vehicle
 // @access  Private
-router.post("/vehicles", auth, async (req, res) => {
+router.post("/vehicles", auth, addVehicleValidation, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   const { registrationNumber } = req.body;
 
   if (!registrationNumber) {

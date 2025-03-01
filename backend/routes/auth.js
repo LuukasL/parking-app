@@ -4,6 +4,12 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const {
+  registerValidation,
+  loginValidation,
+} = require("../validators/auth.validator");
+const { validationResult } = require("express-validator");
+const { successResponse, errorResponse } = require("../utils/response");
 
 // JWT secret - should be in environment variables in production
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
@@ -11,14 +17,20 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post("/register", async (req, res) => {
+router.post("/register", registerValidation, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { name, email, password, phone, role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res
+        .status(400)
+        .json(errorResponse("Validation failed", 400, errors.array()));
     }
 
     // Create new user
@@ -38,20 +50,31 @@ router.post("/register", async (req, res) => {
     });
 
     // Return user data and token
-    res.status(201).json({
-      token,
-      user: user.toJSON(),
-    });
+    res.status(201).json(
+      successResponse(
+        {
+          token,
+          user: user.toJSON(),
+        },
+        "User registered successfully"
+      )
+    );
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json(errorResponse("Server error"));
   }
 });
 
 // @route   POST /api/auth/login
 // @desc    Log in a user
 // @access  Public
-router.post("/login", async (req, res) => {
+router.post("/login", loginValidation, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res
+      .status(400)
+      .json(errorResponse("Validation failed", 400, errors.array()));
+  }
   try {
     const { email, password } = req.body;
 
@@ -73,13 +96,18 @@ router.post("/login", async (req, res) => {
     });
 
     // Return user data and token
-    res.json({
-      token,
-      user: user.toJSON(),
-    });
+    res.json(
+      successResponse(
+        {
+          token,
+          user: user.toJSON(),
+        },
+        "Login successful"
+      )
+    );
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json(errorResponse("Server error"));
   }
 });
 
